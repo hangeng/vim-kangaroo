@@ -14,7 +14,8 @@ function! s:push()
 	if len(w:positions) == 0 || w:positions[-1][0] != pos[0] || w:positions[-1][1]["lnum"] != pos[1]["lnum"]
 		call add(w:positions, pos)
 	    let w:cur_pos = len(w:positions) - 1
-	endif
+    endif
+    " echo "push"
 endfunction
 
 function! s:pop()
@@ -27,35 +28,60 @@ function! s:pop()
 		execute "edit #" . bufnr
 	endif
 	call winrestview(pos)
+    " echo "pop"
 endfunction
 
 
 function! s:backward()
-	if !exists('w:positions') || len(w:positions) == 0 || w:cur_pos == 0
+	if !exists('w:positions') || len(w:positions) == 0 || w:cur_pos == -1
 		echohl ErrorMsg | echo "jump stack underflow" | echohl None
 		return
 	endif
-    let w:cur_pos -= 1
-	let [bufnr, pos] = w:positions[w:cur_pos]
-	if bufnr != bufnr("%")
-		execute "edit #" . bufnr
-	endif
-	call winrestview(pos)
-    exe 'normal! zz'
+
+    " if current cusor postion is same as the position of w:cur_pos
+	let pos = [bufnr("%"), winsaveview()]
+	if w:positions[w:cur_pos][0] != pos[0] || w:positions[w:cur_pos][1]["lnum"] != pos[1]["lnum"]
+    	let [bufnr, pos] = w:positions[w:cur_pos]
+    else
+        if (w:cur_pos == 0)
+            echohl ErrorMsg | echo "jump stack overflow" | echohl None
+            return
+        endif
+        let w:cur_pos -= 1
+	    let [bufnr, pos] = w:positions[w:cur_pos]
+    endif
+    if bufnr != bufnr("%")
+        execute "edit #" . bufnr
+    endif
+    call winrestview(pos)
+    " exe 'normal! zz'
+    " echo "backward"
 endfunction
 
 function! s:forward()
-	if !exists('w:positions') || w:cur_pos >= len(w:positions) - 1
+	if !exists('w:positions') || w:cur_pos >= len(w:positions)
 		echohl ErrorMsg | echo "jump stack overflow" | echohl None
 		return
 	endif
-    let w:cur_pos += 1
-	let [bufnr, pos] = w:positions[w:cur_pos]
+
+    " if current cusor postion is same as the position of w:cur_pos
+	let pos = [bufnr("%"), winsaveview()]
+	if w:positions[w:cur_pos][0] != pos[0] || w:positions[w:cur_pos][1]["lnum"] != pos[1]["lnum"]
+    	let [bufnr, pos] = w:positions[w:cur_pos]
+    else
+        if (w:cur_pos+1 >= len(w:positions))
+            echohl ErrorMsg | echo "jump stack overflow" | echohl None
+            return
+        endif
+        let w:cur_pos += 1
+	    let [bufnr, pos] = w:positions[w:cur_pos]
+    endif
 	if bufnr != bufnr("%")
 		execute "edit #" . bufnr
 	endif
 	call winrestview(pos)
-    exe 'normal! zz'
+    " exe 'normal! zz'
+    " echo "forward"
 endfunction
 
 function! s:clear()
